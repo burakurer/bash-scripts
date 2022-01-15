@@ -31,7 +31,7 @@ pleskInstall() {
 while :
 do
     printf "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
-    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur\n[3] MariaDB surumunu yukselt (10.X)"
+    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur"
     read r
     if [ $r == 1 ]; then
         updateSystem
