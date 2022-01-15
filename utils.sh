@@ -16,14 +16,14 @@ if (($EUID != 0)); then
 fi
 
 update() {
-    printf "\033[33mSistem guncellemeleri denetleniyor\033[0m\n(Iptal icin ctrl+c)\n"
+    printf "\E[31mSistem guncellemeleri denetleniyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     yum update -y && yum upgrade -y && yum install wget nano perl -y
-    printf "\033[32mSistem guncellemeleri tamamlandi\033[0m\n"
+    printf "\E[32mSistem guncellemeleri tamamlandi\E[0m\n"
 }
 
 plesk() {
-    printf "\033[33mPlesk kurulumu baslatiliyor\033[0m\n(Iptal icin ctrl+c)\n"
+    printf "\E[31mPlesk kurulumu baslatiliyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O – https://autoinstall.plesk.com/one-click-installer)
 }
@@ -31,7 +31,7 @@ plesk() {
 mariadbUpdate() {
     # https://support.plesk.com/hc/en-us/articles/213403429--How-to-upgrade-MySQL-5-5-to-5-6-5-7-or-MariaDB-5-5-to-10-x-on-Linux-
     
-    printf "\033[33mMariaDB yukseltmesi baslatiliyor\033[0m\n(Iptal icin ctrl+c)\n"
+    printf "\E[31mMariaDB yukseltmesi baslatiliyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     MYSQL_PWD=`cat /etc/psa/.psa.shadow` mysqldump -u admin --verbose --all-databases --routines --triggers > /tmp/all-databases.sql 2&> /dev/null
 
@@ -70,13 +70,13 @@ mariadbUpdate() {
 
     systemctl start mariadb
     systemctl enable mariadb
-    printf "\033[32mMariaDB basariyla yukseltildi!\033[0m\n";
+    printf "\E[32mMariaDB basariyla yukseltildi!\E[0m\n";
 }
 
 while :
 do
-    printf "\033[33mBu bash scripti burakurer.com tarafindan yazilmistir\033[0m\n"
-    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur\n[3] MariaDB surumunu yukselt (10.X)"
+    printf "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
+    echo -e "\n[1]Sistem guncellemelerini denetle\n[2]Plesk kur\n[3]MariaDB surumunu yukselt (10.X)"
     read r
     if [ $r == 1 ]; then
         update
