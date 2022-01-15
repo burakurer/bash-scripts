@@ -33,43 +33,9 @@ mariadbUpdate() {
     
     printf "\E[31mMariaDB yukseltmesi baslatiliyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
-    MYSQL_PWD=`cat /etc/psa/.psa.shadow` mysqldump -u admin --verbose --all-databases --routines --triggers > /tmp/all-databases.sql 2&> /dev/null
-
-    if [ -f "/etc/yum.repos.d/MariaDB.repo" ] ; then
-      mv /etc/yum.repos.d/MariaDB.repo /etc/yum.repos.d/mariadb.repo
-    fi
-
-    echo "MariaDB servisi durduruldu"
-    systemctl stop mariadb
-
-
-    echo "MySQL dizininin yedegi olusturuldu"
-    cp -v -a /var/lib/mysql/ /var/lib/mysql_backup 2&> /dev/null
-
-    rpm -e --nodeps "`rpm -q --whatprovides mysql-server`"
-
-    echo "MariaDB yukseltiliyor"
-
-    echo "#http://downloads.mariadb.org/mariadb/repositories/
-    [mariadb]
-    name = MariaDB
-    baseurl = http://yum.mariadb.org/10.5/centos7-amd64
-    gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-    gpgcheck=1" > /etc/yum.repos.d/mariadb.repo
-
-    yum install MariaDB-client MariaDB-server MariaDB-compat MariaDB-shared -y
-
-    systemctl restart mariadb
-
-    MYSQL_PWD=`cat /etc/psa/.psa.shadow` mysql_upgrade -uadmin
-
-    systemctl restart mariadb
-
-    echo "Degisiklikler Plesk'e bildiriliyor.. (plesk sbin packagemng -sdf)"
-    plesk sbin packagemng -sdf
-
-    systemctl start mariadb
-    systemctl enable mariadb
+    
+    wget https://plesk.zendesk.com/hc/article_attachments/360022419980/mariadb-10.5-upgrade.sh && chmod +x mariadb-10.5-upgrade.sh
+    ./mariadb-10.5-upgrade.sh
     printf "\E[32mMariaDB basariyla yukseltildi!\E[0m\n";
 }
 
