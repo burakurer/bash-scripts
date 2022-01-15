@@ -15,14 +15,14 @@ if (($EUID != 0)); then
     exit
 fi
 
-update() {
+updateSystem() {
     printf "\E[31mSistem guncellemeleri denetleniyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     yum update -y && yum upgrade -y && yum install wget nano perl -y
     printf "\E[32mSistem guncellemeleri tamamlandi\E[0m\n"
 }
 
-plesk() {
+pleskInstall() {
     printf "\E[31mPlesk kurulumu baslatiliyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O – https://autoinstall.plesk.com/one-click-installer)
@@ -76,12 +76,12 @@ mariadbUpdate() {
 while :
 do
     printf "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
-    echo -e "\n[1]Sistem guncellemelerini denetle\n[2]Plesk kur\n[3]MariaDB surumunu yukselt (10.X)"
+    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur\n[3] MariaDB surumunu yukselt (10.X)"
     read r
     if [ $r == 1 ]; then
-        update
+        updateSystem
     elif [ $r == 2 ]; then
-        plesk
+        pleskInstall
     elif [ $r == 3 ]; then
         mariadbUpdate
     else
