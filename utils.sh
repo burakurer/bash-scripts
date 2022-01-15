@@ -28,17 +28,6 @@ pleskInstall() {
     sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O – https://autoinstall.plesk.com/one-click-installer)
 }
 
-mariadbUpdate() {
-    # https://support.plesk.com/hc/en-us/articles/213403429--How-to-upgrade-MySQL-5-5-to-5-6-5-7-or-MariaDB-5-5-to-10-x-on-Linux-
-    
-    printf "\E[31mMariaDB yukseltmesi baslatiliyor\E[0m\n(Iptal icin ctrl+c)\n"
-    sleep 5
-    
-    wget https://plesk.zendesk.com/hc/article_attachments/360022419980/mariadb-10.5-upgrade.sh && chmod +x mariadb-10.5-upgrade.sh
-    ./mariadb-10.5-upgrade.sh
-    printf "\E[32mMariaDB basariyla yukseltildi!\E[0m\n";
-}
-
 while :
 do
     printf "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
@@ -48,8 +37,6 @@ do
         updateSystem
     elif [ $r == 2 ]; then
         pleskInstall
-    elif [ $r == 3 ]; then
-        mariadbUpdate
     else
         echo "Gecerli bir secenek girilmedi!"
         exit
