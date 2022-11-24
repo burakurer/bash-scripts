@@ -3,7 +3,7 @@
 #######################################################
 #                    burakurer.com                    #
 #                                                     #
-#     Version     : 1.2                               #
+#     Version     : 1.2.1                             #
 #     Last Update : 24/11/2022                        #
 #     Website     : https://burakurer.com             #
 #     Github      : https://github.com/burakurer      #
@@ -44,11 +44,12 @@ dateSync() {
     printf "\E[31mSunucu tarihi senkronize ediliyor (Europe/Istanbul)\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     date -s "$(wget -qSO- --max-redirect=0 google.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
+    printf "\E[32mSunucu tarihi senkronize edildi\E[0m\n"
 }
 
 while :; do
     printf "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
-    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur\n[3] aaPanel kur\n[4]MySQL'i MariaDB 10.5'e yukselt\n[5]Sunucu tarihini senkronize et (Europe/Istanbul)"
+    echo -e "\n[1] Sistem guncellemelerini denetle\n[2] Plesk kur\n[3] aaPanel kur\n[4] MySQL'i MariaDB 10.5'e yukselt\n[5] Sunucu tarihini senkronize et (Europe/Istanbul)"
     read r
     if [ $r == 1 ]; then
         updateSystem
