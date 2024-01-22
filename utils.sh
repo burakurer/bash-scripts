@@ -133,7 +133,7 @@ mariadbUpgrade() {
     echo -e "\E[31mMySQL, MariaDB 10.5 surumune yukseltiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     curl -O https://raw.githubusercontent.com/plesk/kb-scripts/master/c7-mariadb-10-5-upgrade/c7-mariadb-10-5-upgrade.sh && chmod +x c7-mariadb-10-5-upgrade.sh && ./c7-mariadb-10-5-upgrade.sh
-    echo -e "\E[32MySQL, MariaDB 10.5 surumune yukseltildi.\E[0m\n"
+    echo -e "\E[32 MySQL, MariaDB 10.5 surumune yukseltildi.\E[0m\n"
 }
 
 # Plesk
@@ -159,8 +159,7 @@ error1(){
 }
 
 while :; do
-    clear
-    echo -e "\n------------------------------------------\n\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
+    echo -e "   ------------------------------------------\n\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
     echo -e "---Genel Islemler---\n[1] Sistem guncellemelerini denetle\n[2] Sunucu tarihini senkronize et (Europe/Istanbul)\n\n---Kurulumlar ve Yukseltmeler---\n[3] Onerilen paketleri kur (EPEL, wget..)\n[4] Plesk kur\n[5] aaPanel kur\n[6] CloudPanel kur\n[7] MySQL'i MariaDB 10.5'e yukselt\n\n---Hata Cozumleri---\n[8] [PLESK] cURL error 77\n\n---Plesk Islemleri---\n[9] Plesk giris linki olustur\n[10] Sunucu uzerindeki tum Plesk yedeklerini sil\n"
     read -p "Secenek girin (1-10): " r
 
