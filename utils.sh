@@ -61,7 +61,8 @@ updateSystem() {
 dateSync() {
     echo -e "\E[31mSunucu tarihi senkronize ediliyor. (Europe/Istanbul)\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
-    date -s "$(wget -qSO- --max-redirect=0 google.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
+    ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime  # Sunucu saat dilimini ayarla
+    hwclock --systohc  # Hardware saatini güncelle
     echo -e "\E[32mSunucu tarihi senkronize edildi.\E[0m\n"
 }
 
