@@ -45,6 +45,7 @@ checkSupportedOS
 
 # Genel Islemler
 updateSystem() {
+    clear
     echo -e "\E[31mSistem guncellemeleri denetleniyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
 
@@ -55,10 +56,12 @@ updateSystem() {
             yum update -y && yum upgrade -y ;;
     esac
 
+    clear
     echo -e "\E[32mSistem guncellemeleri tamamlandi.\E[0m\n"
 }
 
 dateSync() {
+    clear
     echo -e "\E[31mSunucu tarihi senkronize ediliyor. (Europe/Istanbul)\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
@@ -68,6 +71,7 @@ dateSync() {
 
 # Kurulumlar
 recommendedPacketsInstall(){
+    clear
     echo -e "\E[31mOnerilen paketler kuruluyor.\E[0m\n(Iptal için ctrl+c)\n"
     sleep 5
 
@@ -78,10 +82,12 @@ recommendedPacketsInstall(){
             yum update -y && yum install -y wget curl nano htop epel-release && yum repolist && yum install -y snapd && systemctl enable --now snapd.socket && ln -s /var/lib/snapd/snap /snap && snap install btop ;;
     esac
 
+    clear
     echo -e "\E[32mOnerilen paketler kuruldu.\E[0m\n"
 }
 
 pleskInstall() {
+    clear
     echo -e "\E[31mPlesk kurulumu baslatiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O - https://autoinstall.plesk.com/one-click-installer)
@@ -89,6 +95,7 @@ pleskInstall() {
 }
 
 aaPanelInstall() {
+    clear
     echo -e "\E[31maaPanel kurulumu baslatiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
 
@@ -105,6 +112,7 @@ aaPanelInstall() {
 }
 
 cloudPanelInstall() {
+    clear
     echo -e "\E[31mCloudPanel kurulumu baslatiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
 
@@ -121,6 +129,7 @@ cloudPanelInstall() {
 }
 
 mariadbUpgrade() {
+    clear
     echo -e "\E[31mMySQL, MariaDB 10.5 surumune yukseltiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     curl -O https://raw.githubusercontent.com/plesk/kb-scripts/master/c7-mariadb-10-5-upgrade/c7-mariadb-10-5-upgrade.sh && chmod +x c7-mariadb-10-5-upgrade.sh && ./c7-mariadb-10-5-upgrade.sh
@@ -129,9 +138,11 @@ mariadbUpgrade() {
 
 # Plesk
 createPleskLoginLink(){
+    clear
     plesk login
 }
 removePleskBackups(){
+    clear
     echo -e "\E[31mSunucu uzerindeki tum Plesk yedekleri siliniyor. (Bu islemin geri donusu yoktur!)\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     rm -rf /var/lib/psa/dumps/*
@@ -140,13 +151,15 @@ removePleskBackups(){
 
 # Hata Cozumleri
 error1(){
-echo -e "\E[31m[PLESK] cURL error 77 hatasi cozumleniyor\E[0m\n(Iptal icin ctrl+c)\n"
+    clear
+    echo -e "\E[31m[PLESK] cURL error 77 hatasi cozumleniyor\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
     systemctl restart plesk-php* && systemctl restart sw-engine
     echo -e "\E[32m[PLESK] cURL error 77 hatasi cozumlendi.\E[0m\n"
 }
 
 while :; do
+    clear
     echo -e "\E[31mBu bash scripti burakurer.com tarafindan yazilmistir\E[0m\n"
     echo -e "---Genel Islemler---\n[1] Sistem guncellemelerini denetle\n[2] Sunucu tarihini senkronize et (Europe/Istanbul)\n\n---Kurulumlar ve Yukseltmeler---\n[3] Onerilen paketleri kur (EPEL, wget..)\n[4] Plesk kur\n[5] aaPanel kur\n[6] CloudPanel kur\n[7] MySQL'i MariaDB 10.5'e yukselt\n\n---Hata Cozumleri---\n[8] [PLESK] cURL error 77\n\n---Plesk Islemleri---\n[9] Plesk giris linki olustur\n[10] Sunucu uzerindeki tum Plesk yedeklerini sil\n"
     read -p "Secenek girin (1-10): " r
