@@ -3,7 +3,7 @@
 #######################################################
 #                    burakurer.com                    #
 #                                                     #
-#     Version     : 2.0                               #
+#     Version     : 2.0.1                             #
 #     Last Update : 22/01/2024                        #
 #     Website     : https://burakurer.com             #
 #     Github      : https://github.com/burakurer      #
@@ -61,8 +61,8 @@ updateSystem() {
 dateSync() {
     echo -e "\E[31mSunucu tarihi senkronize ediliyor. (Europe/Istanbul)\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
-    ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime  # Sunucu saat dilimini ayarla
-    hwclock --systohc  # Hardware saatini güncelle
+    ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
+    hwclock --systohc
     echo -e "\E[32mSunucu tarihi senkronize edildi.\E[0m\n"
 }
 
@@ -73,7 +73,7 @@ recommendedPacketsInstall(){
 
     case $OS in
         ubuntu|debian)
-            apt update -y && apt install -y wget curl nano htop epel-release snapd && snap install btop ;;
+            apt update -y && apt install -y wget curl nano htop snapd && snap install btop ;;
         centos)
             yum update -y && yum install -y wget curl nano htop epel-release && yum repolist && yum install -y snapd && systemctl enable --now snapd.socket && ln -s /var/lib/snapd/snap /snap && snap install btop ;;
     esac
@@ -84,7 +84,7 @@ recommendedPacketsInstall(){
 pleskInstall() {
     echo -e "\E[31mPlesk kurulumu baslatiliyor.\E[0m\n(Iptal icin ctrl+c)\n"
     sleep 5
-    curl -O https://raw.githubusercontent.com/burakurer/plesk-one-click-installer/master/poci.sh && chmod +x poci.sh && ./poci.sh
+    sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O - https://autoinstall.plesk.com/one-click-installer)
     echo -e "\E[32mPlesk kurulumu tamamlandi.\E[0m\n"
 }
 
