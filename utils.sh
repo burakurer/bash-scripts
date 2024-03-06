@@ -3,8 +3,8 @@
 #######################################################
 #                    burakurer.com                    #
 #                                                     #
-#     Version     : 2.0.1                             #
-#     Last Update : 22/01/2024                        #
+#     Version     : 2.0.2                             #
+#     Last Update : 06/03/2024                        #
 #     Website     : https://burakurer.com             #
 #     Github      : https://github.com/burakurer      #
 #                                                     #
@@ -66,6 +66,7 @@ dateSync() {
     sleep 5
     ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
     hwclock --systohc
+    date -s "$(wget -qSO- --max-redirect=0 google.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
     echo -e "\E[32mSunucu tarihi senkronize edildi.\E[0m\n"
 }
 
