@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #######################################################
-#                     burakurer.dev                   #
+#                    burakurer.dev                    #
 #                                                     #
+#     Script      : bu-toolkit.sh                     #
 #     Version     : 3.0.0                             #
 #     Last Update : 11/03/2025                        #
 #     Website     : https://burakurer.dev             #
