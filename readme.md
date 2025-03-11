@@ -1,7 +1,6 @@
+# Bash Scripts Installation Guide
 
-# Bu-Toolkit Script Installation Guide
-
-This guide will walk you through the installation and execution of the `bu-toolkit.sh` script.
+This guide will walk you through the installation and execution of the various Bash scripts available in this repository, including `bu-toolkit.sh`, `bu-clamav.sh`, and others.
 
 ## Prerequisites
 
@@ -12,8 +11,14 @@ This guide will walk you through the installation and execution of the `bu-toolk
 
 ## Installation Steps
 
-If you'd like to install the script in one go, use the following command:
+#### For `bu-toolkit.sh` script:
 
 ```bash
 wget https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-toolkit.sh && chmod +x bu-toolkit.sh && ./bu-toolkit.sh
+```
+
+#### For `bu-clamav.sh` script:
+
+```bash
+wget https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-clamav.sh && chmod +x bu-clamav.sh && ./bu-clamav.sh
 ```
