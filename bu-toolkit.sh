@@ -150,7 +150,7 @@ fixPleskCurlError() {
 }
 
 while :; do
-    echo -e "   ------------------------------------------\n\E[31mThis script was written by burakurer.dev\E[0m\n"
+    echo -e "------------------------------------------\n\E[31mThis script was written by burakurer.dev\E[0m\n"
     echo -e "---General Operations---\n[1] Check for system updates\n[2] Synchronize server time (Europe/Istanbul)\n\n---Installations and Upgrades---\n[3] Install recommended packages (wget, curl, nano, htop, btop, epel-release, snapd)\n[4] Install ClamAV (Antivirus)\n[5] Install Plesk\n[6] Install Redis & Memcached\n\n---Plesk Operations---\n[7] Generate Plesk login link\n[8] Delete all Plesk backups\n\n---Error Fixes---\n[9] [PLESK] Fix cURL error 77\n"
     read -p "Enter an option (1-9): " r
 
