@@ -4,7 +4,7 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-toolkit.sh                     #
-#     Version     : 3.1.0                             #
+#     Version     : 3.1.1                             #
 #     Last Update : 17/06/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -51,13 +51,22 @@ getOSInfo() {
 }
 
 getOSInfo
+
 checkSupportedOS() {
     local supported=("ubuntu" "debian" "centos" "rocky" "almalinux")
-    if [[ ! " ${supported[*]} " =~ " ${OS} " ]]; then
+    local found=0
+    for os_name in "${supported[@]}"; do
+        if [[ "$os_name" == "$OS" ]]; then
+            found=1
+            break
+        fi
+    done
+    if [[ $found -ne 1 ]]; then
         log "${RED}Unsupported OS: $OS. This script supports: ${supported[*]}${NC}"
         exit 1
     fi
 }
+
 checkSupportedOS
 
 updateSystem() {
