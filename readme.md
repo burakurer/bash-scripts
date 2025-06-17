@@ -14,11 +14,11 @@ This guide will walk you through the installation and execution of the various B
 #### For `bu-toolkit.sh` script:
 
 ```bash
-wget https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-toolkit.sh && chmod +x bu-toolkit.sh && ./bu-toolkit.sh
+wget -O bu-toolkit.sh https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-toolkit.sh && chmod +x bu-toolkit.sh && ./bu-toolkit.sh
 ```
 
 #### For `bu-clamav.sh` script:
 
 ```bash
-wget https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-clamav.sh && chmod +x bu-clamav.sh && ./bu-clamav.sh
+wget -O bu-clamav.sh https://raw.githubusercontent.com/burakurer/bash-scripts/master/bu-clamav.sh && chmod +x bu-clamav.sh && ./bu-clamav.sh
 ```
