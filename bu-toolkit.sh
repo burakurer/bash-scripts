@@ -4,171 +4,257 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-toolkit.sh                     #
-#     Version     : 3.0.0                             #
-#     Last Update : 11/03/2025                        #
+#     Version     : 3.1.0                             #
+#     Last Update : 17/06/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
 #                                                     #
 #######################################################
 
+set -euo pipefail
+IFS=$'\n\t'
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
 if [[ $EUID -ne 0 ]]; then
-    echo "Please run the script as root."
+    echo -e "${RED}Please run the script as root!${NC}"
     exit 1
 fi
+
+log() {
+    local msg="$1"
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') - $msg"
+}
 
 getOSInfo() {
     if [[ -r /etc/os-release ]]; then
         source /etc/os-release
         OS=$ID
         VERSION=$VERSION_ID
-    elif [[ -r /etc/lsb-release ]]; then
-        OS=$(lsb_release -si)
+    elif command -v lsb_release &>/dev/null; then
+        OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
         VERSION=$(lsb_release -sr)
     else
-        echo "Operating system detection failed!"
+        log "${RED}Operating system detection failed!${NC}"
         exit 1
     fi
 }
 
 checkSupportedOS() {
     getOSInfo
-    case $OS in
-        ubuntu|debian|centos|rocky|almalinux)
-            ;;
-        *)
-            echo "This script is only compatible with Ubuntu, Debian, CentOS, Rocky Linux, and AlmaLinux!"
-            exit 1
-            ;;
-    esac
+    local supported=("ubuntu" "debian" "centos" "rocky" "almalinux")
+    if [[ ! " ${supported[*]} " =~ " ${OS} " ]]; then
+        log "${RED}Unsupported OS: $OS. This script supports: ${supported[*]}${NC}"
+        exit 1
+    fi
 }
-
-checkSupportedOS
 
 updateSystem() {
     clear
-    echo -e "\E[31mChecking for system updates...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
+    log "${YELLOW}Checking for system updates... (Ctrl+C to cancel)${NC}"
+    sleep 2
 
     case $OS in
         ubuntu|debian)
-            apt update -y && apt upgrade -y && apt autoremove -y ;;
+            apt update -y && apt upgrade -y && apt autoremove -y
+            ;;
         centos|rocky|almalinux)
-            yum update -y && yum upgrade -y && yum autoremove -y ;;
+            yum update -y && yum upgrade -y && yum autoremove -y
+            ;;
     esac
 
-    clear
-    echo -e "\E[32mSystem updates completed.\E[0m\n"
+    log "${GREEN}System updates completed.${NC}"
+    sleep 1
 }
 
 dateSync() {
     clear
-    echo -e "\E[31mSyncing server time to Europe/Istanbul...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
-    ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
-    hwclock --systohc
-    timedatectl set-ntp on
-    echo -e "\E[32mServer time synchronized.\E[0m\n"
+    log "${YELLOW}Syncing server time to Europe/Istanbul... (Ctrl+C to cancel)${NC}"
+    sleep 2
+
+    if [[ -f /usr/share/zoneinfo/Europe/Istanbul ]]; then
+        ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
+        hwclock --systohc
+        timedatectl set-ntp true
+        log "${GREEN}Server time synchronized.${NC}"
+    else
+        log "${RED}Timezone data for Europe/Istanbul not found!${NC}"
+    fi
+    sleep 1
 }
 
-installRecommendedPackages(){
+installRecommendedPackages() {
     clear
-    echo -e "\E[31mInstalling recommended packages...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
+    log "${YELLOW}Installing recommended packages... (Ctrl+C to cancel)${NC}"
+    sleep 2
 
     case $OS in
         ubuntu|debian)
-            apt update -y && apt install -y wget curl nano htop snapd && snap install btop ;;
+            apt update -y
+            apt install -y wget curl nano htop snapd
+            snap install btop
+            ;;
         centos|rocky|almalinux)
-            yum update -y && yum install -y wget curl nano htop epel-release && yum repolist && yum install -y snapd && systemctl enable --now snapd.socket && ln -s /var/lib/snapd/snap /snap && snap install btop ;;
+            yum install -y epel-release
+            yum update -y
+            yum install -y wget curl nano htop snapd
+            systemctl enable --now snapd.socket
+            ln -sf /var/lib/snapd/snap /snap
+            snap install btop
+            ;;
     esac
 
-    clear
-    echo -e "\E[32mRecommended packages installed.\E[0m\n"
+    log "${GREEN}Recommended packages installed.${NC}"
+    sleep 1
 }
 
 installClamAV() {
     clear
-    echo -e "\E[31mInstalling ClamAV...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
+    log "${YELLOW}Installing ClamAV... (Ctrl+C to cancel)${NC}"
+    sleep 2
 
     case $OS in
         ubuntu|debian)
-            apt install -y clamav clamav-daemon && systemctl enable --now clamav-freshclam.service ;;
+            apt install -y clamav clamav-daemon
+            systemctl enable --now clamav-freshclam.service
+            freshclam
+            ;;
         centos|rocky|almalinux)
-            yum install -y clamav clamav-update && freshclam && systemctl enable --now clamd@scan.service ;;
+            yum install -y epel-release
+            yum install -y clamav clamav-update
+            freshclam
+            systemctl enable --now clamd@scan.service
+            ;;
     esac
 
-    echo -e "\E[32mClamAV installed and updated.\E[0m\n"
+    log "${GREEN}ClamAV installed and updated.${NC}"
+    sleep 1
 }
 
 installPlesk() {
     clear
-    echo -e "\E[31mStarting Plesk installation...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
-    sh <(curl https://autoinstall.plesk.com/one-click-installer || wget -O - https://autoinstall.plesk.com/one-click-installer)
-    echo -e "\E[32mPlesk installation completed.\E[0m\n"
+    log "${YELLOW}Starting Plesk installation... (Ctrl+C to cancel)${NC}"
+    sleep 2
+
+    if command -v curl &>/dev/null; then
+        sh <(curl -fsSL https://autoinstall.plesk.com/one-click-installer)
+    elif command -v wget &>/dev/null; then
+        sh <(wget -qO- https://autoinstall.plesk.com/one-click-installer)
+    else
+        log "${RED}Neither curl nor wget is installed! Cannot download Plesk installer.${NC}"
+        return 1
+    fi
+
+    log "${GREEN}Plesk installation completed.${NC}"
+    sleep 1
 }
 
 installCaching() {
     clear
-    echo -e "\e[31mInstalling Redis & Memcached...\e[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
+    log "${YELLOW}Installing Redis & Memcached... (Ctrl+C to cancel)${NC}"
+    sleep 2
 
     case $OS in
         ubuntu|debian)
-            apt update -y && apt install -y redis memcached
+            apt update -y
+            apt install -y redis memcached
             systemctl enable --now redis memcached
             ;;
-        centos)
+        centos|rocky|almalinux)
             yum install -y epel-release
             yum install -y redis memcached
             systemctl enable --now redis memcached
             ;;
     esac
 
-    echo -e "\e[32mRedis & Memcached installation completed.\e[0m\n"
+    log "${GREEN}Redis & Memcached installation completed.${NC}"
+    sleep 1
 }
 
-createPleskLoginLink(){
+createPleskLoginLink() {
     clear
-    plesk login
+    if command -v plesk &>/dev/null; then
+        plesk login
+    else
+        log "${RED}Plesk CLI tool not found.${NC}"
+    fi
+    sleep 1
 }
 
-removePleskBackups(){
+removePleskBackups() {
     clear
-    echo -e "\E[31mDeleting all Plesk backups...\E[0m\n(This operation is irreversible!)\n(Press Ctrl+C to cancel)\n"
-    sleep 3
-    rm -rf /var/lib/psa/dumps/*
-    echo -e "\E[32mAll Plesk backups deleted.\E[0m\n"
+    echo -e "${RED}Deleting all Plesk backups... This is irreversible! (Ctrl+C to cancel)${NC}"
+    read -rp "Are you sure you want to proceed? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        log "Operation cancelled by user."
+        return
+    fi
+
+    if [[ -d /var/lib/psa/dumps ]]; then
+        rm -rf /var/lib/psa/dumps/*
+        log "${GREEN}All Plesk backups deleted.${NC}"
+    else
+        log "${RED}Plesk backups directory not found.${NC}"
+    fi
+    sleep 1
 }
 
 fixPleskCurlError() {
     clear
-    echo -e "\E[31m[PLESK] Fixing cURL error 77...\E[0m\n(Press Ctrl+C to cancel)\n"
-    sleep 3
-    systemctl restart plesk-php* && systemctl restart sw-engine
-    echo -e "\E[32m[PLESK] cURL error 77 fixed.\E[0m\n"
+    log "${YELLOW}[PLESK] Fixing cURL error 77... (Ctrl+C to cancel)${NC}"
+    sleep 2
+
+    systemctl restart plesk-php* || log "${RED}Failed to restart plesk-php services.${NC}"
+    systemctl restart sw-engine || log "${RED}Failed to restart sw-engine service.${NC}"
+
+    log "${GREEN}[PLESK] cURL error 77 fixed (if restarts succeeded).${NC}"
+    sleep 1
 }
 
-while :; do
-    echo -e "------------------------------------------\n\E[31mThis script was written by burakurer.dev\E[0m\n"
-    echo -e "---General Operations---\n[1] Check for system updates\n[2] Synchronize server time (Europe/Istanbul)\n\n---Installations and Upgrades---\n[3] Install recommended packages (wget, curl, nano, htop, btop, epel-release, snapd)\n[4] Install ClamAV (Antivirus)\n[5] Install Plesk\n[6] Install Redis & Memcached\n\n---Plesk Operations---\n[7] Generate Plesk login link\n[8] Delete all Plesk backups\n\n---Error Fixes---\n[9] [PLESK] Fix cURL error 77\n"
-    read -p "Enter an option (1-9): " r
+while true; do
+    clear
+    echo -e "------------------------------------------"
+    echo -e "${RED}Script by burakurer.dev${NC}"
+    echo -e "=== General Operations ==="
+    echo -e "[1] Check for system updates"
+    echo -e "[2] Synchronize server time (Europe/Istanbul)"
+    echo -e "\n=== Installations and Upgrades ==="
+    echo -e "[3] Install recommended packages (wget, curl, nano, htop, btop, epel-release, snapd)"
+    echo -e "[4] Install ClamAV (Antivirus)"
+    echo -e "[5] Install Plesk"
+    echo -e "[6] Install Redis & Memcached"
+    echo -e "\n=== Plesk Operations ==="
+    echo -e "[7] Generate Plesk login link"
+    echo -e "[8] Delete all Plesk backups"
+    echo -e "\n=== Error Fixes ==="
+    echo -e "[9] [PLESK] Fix cURL error 77"
+    echo -e "[0] Exit"
+    echo -e "------------------------------------------"
+    read -rp "Enter an option (0-9): " choice
 
-    case $r in
+    case $choice in
         1) updateSystem ;;
         2) dateSync ;;
-
         3) installRecommendedPackages ;;
         4) installClamAV ;;
         5) installPlesk ;;
         6) installCaching ;;
-
         7) createPleskLoginLink ;;
         8) removePleskBackups ;;
-
         9) fixPleskCurlError ;;
-        *) echo "Invalid option!"; exit ;;
+        0)
+            log "Exiting script as requested."
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Invalid option! Please try again.${NC}"
+            sleep 1
+            ;;
     esac
 
+    echo -e "${YELLOW}Press Enter to continue...${NC}"
+    read -r
 done
