@@ -4,7 +4,7 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-clamav.sh                      #
-#     Version     : 1.1.0                             #
+#     Version     : 1.1.1                             #
 #     Last Update : 17/06/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -112,7 +112,7 @@ function show_progress() {
     fi
 
     echo -e "\e[33mShowing logs from: $logfile\e[0m"
-    tail -f "$logfile" | grep --color=auto -E "^(?!$)"
+    tail -f "$logfile"
 }
 
 function show_found() {
