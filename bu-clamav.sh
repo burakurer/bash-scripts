@@ -11,28 +11,22 @@
 #                                                     #
 #######################################################
 
-# Root check
 if [[ $EUID -ne 0 ]]; then
     echo -e "\e[31mPlease run the script as root.\e[0m"
     exit 1
 fi
 
-# Log dosyalarının dizini ve dosya isimlendirme
 LOG_DIR="./logs"
 mkdir -p "$LOG_DIR"
 
-# Tarih formatı
 DATE_NOW=$(date +"%Y-%m-%d_%H-%M-%S")
 
-# Fonksiyon: Log dosya isimleri (tarama türüne göre)
 function get_log_files() {
     local scan_type=$1
-    # scan_type = system veya directory
     LOG_OUTPUT="$LOG_DIR/${scan_type}_scan_output_${DATE_NOW}.log"
     LOG_ERRORS="$LOG_DIR/${scan_type}_scan_errors_${DATE_NOW}.log"
 }
 
-# ClamAV kurulumu
 function install_clamav() {
     echo -e "\n\e[34mStarting ClamAV installation...\e[0m"
     sleep 1
@@ -55,7 +49,6 @@ function install_clamav() {
     fi
 }
 
-# ClamAV veritabanı güncelleme
 function update_clamav_db() {
     echo -e "\n\e[34mUpdating ClamAV database...\e[0m"
     freshclam
@@ -66,19 +59,15 @@ function update_clamav_db() {
     fi
 }
 
-# Tarama sonrası log özet çıkarma
 function print_scan_summary() {
     local output_file=$1
     echo -e "\n\e[33mScan Summary:\e[0m" | tee -a "$output_file"
-    # Toplam taranan dosya sayısı
     local total_files=$(grep "Scanned directories:" "$output_file" | tail -1 | awk '{print $3}')
-    # Enfekte dosya sayısı
     local infected=$(grep "Infected files:" "$output_file" | tail -1 | awk '{print $3}')
     echo "Total scanned directories: $total_files" | tee -a "$output_file"
     echo "Infected files found: $infected" | tee -a "$output_file"
 }
 
-# Sistem taraması (arka planda)
 function scan_system() {
     update_clamav_db
     get_log_files "system"
@@ -91,7 +80,6 @@ function scan_system() {
     echo "Error logs: $LOG_ERRORS"
 }
 
-# Özel dizin taraması (arka planda)
 function scan_directory() {
     update_clamav_db
     read -rp "Enter the full path of the directory to scan: " directory
@@ -111,13 +99,11 @@ function scan_directory() {
     echo "Error logs: $LOG_ERRORS"
 }
 
-# Canlı tarama çıktısı izlemesi
 function show_progress() {
     echo -e "\n\e[36mMonitoring scan progress (press CTRL+C to exit)...\e[0m"
     read -rp "Enter log file path (or press Enter for last system scan log): " logfile
 
     if [[ -z "$logfile" ]]; then
-        # Son log dosyasını bul
         logfile=$(ls -1t $LOG_DIR/*_scan_output_*.log 2>/dev/null | head -n1)
         if [[ -z "$logfile" ]]; then
             echo -e "\e[31mNo scan logs found.\e[0m"
@@ -126,12 +112,10 @@ function show_progress() {
     fi
 
     echo -e "\e[33mShowing logs from: $logfile\e[0m"
-    tail -f "$logfile" | grep --color=auto -E "^(?!$)"  # renkli ve boş satır yok
+    tail -f "$logfile" | grep --color=auto -E "^(?!$)"
 }
 
-# Enfekte dosyaları listele
 function show_found() {
-    # Son log dosyasını bul
     local logfile
     logfile=$(ls -1t $LOG_DIR/*_scan_output_*.log 2>/dev/null | head -n1)
     if [[ -z "$logfile" ]]; then
@@ -143,7 +127,6 @@ function show_found() {
     grep "FOUND" "$logfile" || echo -e "\e[32mNo infected files found in the latest scan.\e[0m"
 }
 
-# Çalışan taramaları durdur
 function stop_scan() {
     local pids
     pids=$(pgrep -f "clamscan -r")
@@ -156,14 +139,12 @@ function stop_scan() {
     fi
 }
 
-# Log dosyalarını temizle
 function clear_logs() {
     echo -e "\n\e[33mClearing old log files in $LOG_DIR ...\e[0m"
     rm -f "$LOG_DIR"/*.log
     echo -e "\e[32mLog files cleared.\e[0m"
 }
 
-# Kullanıcı menüsü
 function menu() {
     echo -e "\n\e[1;34m=== ClamAV Scan Management ===\e[0m"
     echo -e " 0) Install ClamAV"
@@ -177,7 +158,6 @@ function menu() {
     echo -e " 8) Exit"
 }
 
-# Ana döngü
 while true; do
     menu
     read -rp "Please choose an option: " choice
