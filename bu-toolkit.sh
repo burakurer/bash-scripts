@@ -4,7 +4,7 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-toolkit.sh                     #
-#     Version     : 3.1.1                             #
+#     Version     : 3.1.2                             #
 #     Last Update : 17/06/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -93,9 +93,9 @@ dateSync() {
     sleep 2
 
     if [[ -f /usr/share/zoneinfo/Europe/Istanbul ]]; then
-        ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime
-        hwclock --systohc
+        timedatectl set-timezone Europe/Istanbul
         timedatectl set-ntp true
+        # hwclock --systohc  # kaldırıldı
         log "${GREEN}Server time synchronized.${NC}"
     else
         log "${RED}Timezone data for Europe/Istanbul not found!${NC}"
