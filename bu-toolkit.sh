@@ -18,6 +18,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
+OS=""
+VERSION=""
 
 if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}Please run the script as root!${NC}"
@@ -32,7 +34,7 @@ log() {
 getOSInfo() {
     if [[ -r /etc/os-release ]]; then
         source /etc/os-release
-        OS=$ID
+        OS=${ID,,}
         VERSION=$VERSION_ID
     elif command -v lsb_release &>/dev/null; then
         OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
@@ -41,16 +43,22 @@ getOSInfo() {
         log "${RED}Operating system detection failed!${NC}"
         exit 1
     fi
+
+    if [[ -z "$OS" ]]; then
+        log "${RED}Operating system detection failed: OS is empty${NC}"
+        exit 1
+    fi
 }
 
+getOSInfo
 checkSupportedOS() {
-    getOSInfo
     local supported=("ubuntu" "debian" "centos" "rocky" "almalinux")
     if [[ ! " ${supported[*]} " =~ " ${OS} " ]]; then
         log "${RED}Unsupported OS: $OS. This script supports: ${supported[*]}${NC}"
         exit 1
     fi
 }
+checkSupportedOS
 
 updateSystem() {
     clear
