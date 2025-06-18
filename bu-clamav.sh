@@ -51,9 +51,13 @@ function install_clamav() {
 
 function update_clamav_db() {
     echo -e "\n\e[34mUpdating ClamAV database...\e[0m"
-    freshclam
-    if [[ $? -eq 0 ]]; then
+    if freshclam; then
         echo -e "\e[32mClamAV database updated successfully.\e[0m"
+
+        if systemctl is-active --quiet clamav-daemon; then
+            echo -e "\e[33mRestarting clamav-daemon to apply new definitions...\e[0m"
+            systemctl restart clamav-daemon
+        fi
     else
         echo -e "\e[31mAn error occurred while updating the ClamAV database.\e[0m"
     fi
