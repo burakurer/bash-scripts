@@ -4,7 +4,7 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-clamav.sh                      #
-#     Version     : 1.2                               #
+#     Version     : 1.2.1                             #
 #     Last Update : 08/07/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -31,7 +31,7 @@ function install_clamav() {
     echo -e "\n\e[34mStarting ClamAV installation...\e[0m"
     sleep 1
     if command -v apt-get &>/dev/null; then
-        apt-get update && apt-get install -y clamav clamav-daemon
+        apt-get update && apt-get install -y clamav
     elif command -v yum &>/dev/null; then
         yum install -y epel-release && yum install -y clamav clamav-update
     elif command -v dnf &>/dev/null; then
