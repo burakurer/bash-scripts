@@ -4,8 +4,8 @@
 #                    burakurer.dev                    #
 #                                                     #
 #     Script      : bu-clamav.sh                      #
-#     Version     : 1.1.2                             #
-#     Last Update : 17/06/2025                        #
+#     Version     : 1.2                               #
+#     Last Update : 08/07/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
 #                                                     #
@@ -53,11 +53,6 @@ function update_clamav_db() {
     echo -e "\n\e[34mUpdating ClamAV database...\e[0m"
     if freshclam; then
         echo -e "\e[32mClamAV database updated successfully.\e[0m"
-
-        if systemctl is-active --quiet clamav-daemon; then
-            echo -e "\e[33mRestarting clamav-daemon to apply new definitions...\e[0m"
-            systemctl restart clamav-daemon
-        fi
     else
         echo -e "\e[31mAn error occurred while updating the ClamAV database.\e[0m"
     fi
@@ -72,30 +67,12 @@ function print_scan_summary() {
     echo "Infected files found: $infected" | tee -a "$output_file"
 }
 
-function ensure_clamd_running() {
-    echo -e "\n\e[34mChecking ClamAV daemon status...\e[0m"
-    if ! systemctl is-active --quiet clamav-daemon; then
-        echo -e "\e[33mclamav-daemon is not running. Attempting to start it...\e[0m"
-        systemctl start clamav-daemon
-        sleep 2
-        if systemctl is-active --quiet clamav-daemon; then
-            echo -e "\e[32mclamav-daemon started successfully.\e[0m"
-        else
-            echo -e "\e[31mFailed to start clamav-daemon. Please check the logs.\e[0m"
-            exit 1
-        fi
-    else
-        echo -e "\e[32mclamav-daemon is already running.\e[0m"
-    fi
-}
-
 function scan_system() {
-    ensure_clamd_running
     update_clamav_db
     get_log_files "system"
-    echo -e "\n\e[34mStarting system scan...\e[0m"
+    echo -e "\n\e[34mStarting system scan with clamscan...\e[0m"
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
-    nohup clamdscan --fdpass -r / >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
+    nohup clamscan -r / >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
     local pid=$!
     echo -e "\e[32mScan started in background (PID: $pid).\e[0m"
     echo "Output logs: $LOG_OUTPUT"
@@ -103,7 +80,6 @@ function scan_system() {
 }
 
 function scan_directory() {
-    ensure_clamd_running
     update_clamav_db
     read -rp "Enter the full path of the directory to scan: " directory
 
@@ -113,9 +89,9 @@ function scan_directory() {
     fi
 
     get_log_files "directory"
-    echo -e "\n\e[34mStarting scan of directory: $directory\e[0m"
+    echo -e "\n\e[34mStarting scan of directory: $directory with clamscan\e[0m"
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
-    nohup clamdscan --fdpass -r "$directory" >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
+    nohup clamscan -r "$directory" >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
     local pid=$!
     echo -e "\e[32mScan started in the background (PID: $pid).\e[0m"
     echo "Output logs: $LOG_OUTPUT"
@@ -152,9 +128,9 @@ function show_found() {
 
 function stop_scan() {
     local pids
-    pids=$(pgrep -f "clamscan|clamdscan")
+    pids=$(pgrep -f "clamscan")
     if [[ -n "$pids" ]]; then
-        echo -e "\e[33mStopping all scan processes (clamscan/clamdscan)...\e[0m"
+        echo -e "\e[33mStopping all clamscan processes...\e[0m"
         kill -9 $pids
         echo -e "\e[32mScan processes stopped.\e[0m"
     else
