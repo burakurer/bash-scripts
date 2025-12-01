@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-benchmark.sh                   #
 #     Description : Disk I/O Performance Benchmark    #
-#     Version     : 2.3.0                             #
+#     Version     : 2.4.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -16,7 +16,7 @@ set -uo pipefail
 export LC_ALL=C
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="2.3.0"
+SCRIPT_VERSION="2.4.0"
 SCRIPT_NAME="bu-benchmark.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -188,19 +188,42 @@ EOF
 # Parse speed value from dd output (returns MB/s)
 parse_speed() {
     local output="$1"
-    local match val unit mbps
+    local speed_line val unit mbps
 
-    # Find speed pattern in output
-    match=$(echo "$output" | grep -Eo '[0-9]+([.][0-9]+)?\s*(KiB|MiB|GiB|kB|KB|MB|GB|B)/s' | tail -n1)
+    # Get the line containing speed (last line usually has the speed)
+    speed_line=$(echo "$output" | tail -n1)
     
-    if [[ -z "$match" ]]; then
+    # Try different patterns for dd output
+    # Pattern 1: "123 MB/s" or "123.45 MB/s"
+    if echo "$speed_line" | grep -qE '[0-9]+([.,][0-9]+)?\s*(GB|MB|KB|kB|GiB|MiB|KiB|B)/s'; then
+        # Extract the number and unit
+        val=$(echo "$speed_line" | grep -oE '[0-9]+([.,][0-9]+)?\s*(GB|MB|KB|kB|GiB|MiB|KiB|B)/s' | tail -1 | awk '{gsub(",", "."); print $1}')
+        unit=$(echo "$speed_line" | grep -oE '[0-9]+([.,][0-9]+)?\s*(GB|MB|KB|kB|GiB|MiB|KiB|B)/s' | tail -1 | awk '{print $2}')
+    else
+        # Fallback: try to find any number followed by unit/s
+        val=$(echo "$speed_line" | grep -oE '[0-9]+([.,][0-9]+)?' | tail -1 | sed 's/,/./')
+        # Try to detect unit
+        if echo "$speed_line" | grep -qiE 'GB/s|GiB/s'; then
+            unit="GB/s"
+        elif echo "$speed_line" | grep -qiE 'MB/s|MiB/s'; then
+            unit="MB/s"
+        elif echo "$speed_line" | grep -qiE 'KB/s|KiB/s|kB/s'; then
+            unit="KB/s"
+        else
+            unit="B/s"
+        fi
+    fi
+    
+    # Handle empty values
+    if [[ -z "$val" ]] || [[ "$val" == "0" ]]; then
         echo "0"
         return 0
     fi
+    
+    # Replace comma with dot for decimal
+    val=$(echo "$val" | sed 's/,/./')
 
-    val=$(echo "$match" | awk '{print $1}')
-    unit=$(echo "$match" | awk '{print $2}')
-
+    # Convert to MB/s
     case "$unit" in
         kB/s|KB/s)  mbps=$(awk -v v="$val" 'BEGIN{printf "%.2f", v/1000}') ;;
         KiB/s)      mbps=$(awk -v v="$val" 'BEGIN{printf "%.2f", v/1024}') ;;
@@ -223,11 +246,11 @@ run_dd_test() {
     local total_mbps=0
     local i
 
-    echo -e "\n${BOLD}[Test $test_num]${NC} $description"
+    echo -e "\n${BOLD}[Test $test_num]${NC} $description" >&2
     log_verbose "Command: $dd_cmd"
 
     for ((i=1; i<=ITERATIONS; i++)); do
-        [[ $ITERATIONS -gt 1 ]] && echo -e "  ${DIM}Iteration $i/$ITERATIONS...${NC}"
+        [[ $ITERATIONS -gt 1 ]] && echo -e "  ${DIM}Iteration $i/$ITERATIONS...${NC}" >&2
         
         # Clear caches if running as root
         if [[ $EUID -eq 0 ]]; then
@@ -236,11 +259,11 @@ run_dd_test() {
         fi
 
         local output
-        output=$( (eval "$dd_cmd") 2>&1 )
+        output=$( eval "$dd_cmd" 2>&1 )
         local speed
         speed=$(parse_speed "$output")
         
-        [[ "$VERBOSE" == "true" ]] && echo "$output" | tail -n1
+        [[ "$VERBOSE" == "true" ]] && echo "$output" | tail -n1 >&2
         
         total_mbps=$(awk -v t="$total_mbps" -v s="$speed" 'BEGIN{printf "%.2f", t+s}')
     done
@@ -248,8 +271,9 @@ run_dd_test() {
     # Calculate average
     local avg_mbps
     avg_mbps=$(awk -v t="$total_mbps" -v n="$ITERATIONS" 'BEGIN{printf "%.2f", t/n}')
-    echo -e "  ${GREEN}►${NC} Speed: ${BOLD}${avg_mbps} MB/s${NC}"
+    echo -e "  ${GREEN}►${NC} Speed: ${BOLD}${avg_mbps} MB/s${NC}" >&2
     
+    # Return only the numeric value to stdout
     echo "$avg_mbps"
 }
 
