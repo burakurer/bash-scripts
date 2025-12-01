@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 1.9.0                             #
+#     Version     : 1.9.1                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="1.9.0"
+SCRIPT_VERSION="1.9.1"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -328,9 +328,10 @@ scan_system() {
     
     # Run scan in background with proper output handling
     if $use_daemon; then
-        # clamdscan with multiscan
+        # clamdscan with multiscan and fdpass (for permission issues)
+        # Note: clamdscan is recursive by default, no -r needed
         (
-            clamdscan --multiscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamdscan --multiscan --fdpass / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
@@ -338,7 +339,7 @@ scan_system() {
     else
         # clamscan standalone
         (
-            clamscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
@@ -383,9 +384,10 @@ scan_directory() {
     
     # Run scan in background with proper output handling
     if $use_daemon; then
-        # clamdscan with multiscan
+        # clamdscan with multiscan and fdpass (for permission issues)
+        # Note: clamdscan is recursive by default, no -r needed
         (
-            clamdscan --multiscan -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamdscan --multiscan --fdpass "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
