@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : install.sh                        #
 #     Description : BU-Scripts Installer              #
-#     Version     : 1.1.0                             #
+#     Version     : 1.2.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -33,26 +33,28 @@ INSTALL_DIR="."
 declare -A SCRIPTS=(
     ["bu-toolkit"]="bu-toolkit.sh|Server Management Toolkit"
     ["bu-clamav"]="bu-clamav.sh|ClamAV Antivirus Manager"
-    ["dd-benchmark"]="bu-benchmark.sh|Disk I/O Benchmark"
+    ["bu-benchmark"]="bu-benchmark.sh|Disk I/O Benchmark"
 )
 
 # ------------------------ Helper Functions ------------------------
 print_banner() {
     clear
     echo -e "${BOLD}${BLUE}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                                                              ║"
-    echo "║    ██████╗ ██╗   ██╗    ███████╗ ██████╗██████╗ ██╗██████╗   ║"
-    echo "║    ██╔══██╗██║   ██║    ██╔════╝██╔════╝██╔══██╗██║██╔══██╗  ║"
-    echo "║    ██████╔╝██║   ██║    ███████╗██║     ██████╔╝██║██████╔╝  ║"
-    echo "║    ██╔══██╗██║   ██║    ╚════██║██║     ██╔══██╗██║██╔═══╝   ║"
-    echo "║    ██████╔╝╚██████╔╝    ███████║╚██████╗██║  ██║██║██║       ║"
-    echo "║    ╚═════╝  ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝       ║"
-    echo "║                                                              ║"
-    echo "║                    Installer v1.1.0                          ║"
-    echo "║                    burakurer.dev                             ║"
-    echo "║                                                              ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo '╔══════════════════════════════════════════════════════════════════════════════════════════════════╗'
+    echo '║                                                                                                  ║'
+    echo '║     /$$$$$$$                               /$$                                                   ║'
+    echo '║    | $$__  $$                             | $$                                                   ║'
+    echo '║    | $$  \ $$ /$$   /$$  /$$$$$$  /$$$$$$ | $$   /$$ /$$   /$$  /$$$$$$   /$$$$$$   /$$$$$$      ║'
+    echo '║    | $$$$$$$ | $$  | $$ /$$__  $$|____  $$| $$  /$$/| $$  | $$ /$$__  $$ /$$__  $$ /$$__  $$     ║'
+    echo '║    | $$__  $$| $$  | $$| $$  \__/ /$$$$$$$| $$$$$$/ | $$  | $$| $$  \__/| $$$$$$$$| $$  \__/     ║'
+    echo '║    | $$  \ $$| $$  | $$| $$      /$$__  $$| $$_  $$ | $$  | $$| $$      | $$_____/| $$           ║'
+    echo '║    | $$$$$$$/|  $$$$$$/| $$     |  $$$$$$$| $$ \  $$|  $$$$$$/| $$      |  $$$$$$$| $$           ║'                                                            ║"
+    echo '║    |_______/  \______/ |__/      \_______/|__/  \__/ \______/ |__/       \_______/|__/           ║'                                                              ║"
+    echo '║                                                                                                  ║'
+    echo '║                                       Installer v1.2.0                                           ║'
+    echo '║                                         burakurer.dev                                            ║'
+    echo '║                                                                                                  ║'
+    echo '╚══════════════════════════════════════════════════════════════════════════════════════════════════╝'
     echo -e "${NC}"
 }
 
@@ -159,7 +161,7 @@ install_selected() {
     echo -e "  ${RED}[0]${NC} Cancel"
     echo
     
-    read -rp "Enter your choice (comma-separated for multiple, e.g., 1,2): " choice
+    read -rp "Enter your choice (comma-separated for multiple, e.g., 1,2): " choice </dev/tty
     
     if [[ "$choice" == "0" ]]; then
         log_info "Installation cancelled."
@@ -226,7 +228,7 @@ main() {
     echo -e "  ${DIM}[0]${NC} Exit"
     echo
     
-    read -rp "Enter your choice: " main_choice
+    read -rp "Enter your choice: " main_choice </dev/tty
     
     case $main_choice in
         1)
