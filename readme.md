@@ -12,7 +12,7 @@ A collection of useful Bash scripts for Linux server management and maintenance.
 | Script | Description | Version |
 |--------|-------------|---------|
 | `bu-toolkit.sh` | Server Management Toolkit - System updates, package installation, cleanup, and more | v4.2.0 |
-| `bu-clamav.sh` | ClamAV Antivirus Management - Install, scan, and manage ClamAV | v2.1.0 |
+| `bu-clamav.sh` | ClamAV Antivirus Management - Install, scan, and manage ClamAV | v2.3.0 |
 | `bu-benchmark.sh` | Disk I/O Performance Benchmark - Test and analyze disk performance | v2.4.0 |
 
 ### ✨ Auto-Update Feature

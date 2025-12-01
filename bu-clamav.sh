@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 2.1.0                             #
+#     Version     : 2.3.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.3.0"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -271,6 +271,18 @@ start_clamd() {
     return 0
 }
 
+# Stop clamd daemon to free memory
+stop_clamd() {
+    if check_clamd_status; then
+        echo -e "${YELLOW}Stopping ClamAV daemon to free memory...${NC}"
+        systemctl stop clamav-daemon 2>/dev/null || systemctl stop clamd@scan 2>/dev/null || true
+        sleep 1
+        if ! check_clamd_status; then
+            echo -e "${GREEN}ClamAV daemon stopped.${NC}"
+        fi
+    fi
+}
+
 # Get the appropriate scan command based on RAM and daemon status
 # Returns: "clamdscan" or "clamscan"
 get_scan_command() {
@@ -347,35 +359,44 @@ scan_system() {
     echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
-    # Run scan in background - only log FOUND entries and summary
+    # Run scan in background with nohup - survives SSH disconnect
+    # Only log FOUND entries and summary
     if $use_daemon; then
         # clamdscan with fdpass (for permission issues)
         # Note: clamdscan is recursive by default, no -r needed
-        (
+        nohup bash -c '
             clamdscan --fdpass / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
-            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
-            echo "" >>"$LOG_OUTPUT"
-            echo "----------------------------------------" >>"$LOG_OUTPUT"
-            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-        ) &
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "'"$LOG_OUTPUT"'"
+            echo "" >>"'"$LOG_OUTPUT"'"
+            echo "----------------------------------------" >>"'"$LOG_OUTPUT"'"
+            echo "Scan completed at $(date)" >>"'"$LOG_OUTPUT"'"
+            # Stop daemon after scan to free memory
+            systemctl stop clamav-daemon 2>/dev/null || systemctl stop clamd@scan 2>/dev/null || true
+            echo "Daemon stopped to free memory." >>"'"$LOG_OUTPUT"'"
+        ' >/dev/null 2>&1 &
     else
         # clamscan standalone with thread limit
-        (
-            clamscan -r --max-threads="$threads" / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
-            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
-            echo "" >>"$LOG_OUTPUT"
-            echo "----------------------------------------" >>"$LOG_OUTPUT"
-            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-        ) &
+        nohup bash -c '
+            clamscan -r --max-threads="'"$threads"'" / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "'"$LOG_OUTPUT"'"
+            echo "" >>"'"$LOG_OUTPUT"'"
+            echo "----------------------------------------" >>"'"$LOG_OUTPUT"'"
+            echo "Scan completed at $(date)" >>"'"$LOG_OUTPUT"'"
+        ' >/dev/null 2>&1 &
     fi
     local pid=$!
+    disown $pid
     
     echo -e "${GREEN}Scan started in background (PID: $pid).${NC}"
     echo -e "${CYAN}Using $threads CPU thread(s) (of $(nproc 2>/dev/null || echo '?') available)${NC}"
     echo "Output logs: $LOG_OUTPUT"
     echo ""
+    echo -e "${GREEN}✓ Scan will continue even if you disconnect SSH${NC}"
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
     echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
+    if $use_daemon; then
+        echo -e "${DIM}Note: Daemon will auto-stop after scan to free memory${NC}"
+    fi
 }
 
 scan_directory() {
@@ -412,35 +433,44 @@ scan_directory() {
     echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
-    # Run scan in background - only log FOUND entries and summary
+    # Run scan in background with nohup - survives SSH disconnect
+    # Only log FOUND entries and summary
     if $use_daemon; then
         # clamdscan with fdpass (for permission issues)
         # Note: clamdscan is recursive by default, no -r needed
-        (
-            clamdscan --fdpass "$directory" 2>&1 | \
-            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
-            echo "" >>"$LOG_OUTPUT"
-            echo "----------------------------------------" >>"$LOG_OUTPUT"
-            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-        ) &
+        nohup bash -c '
+            clamdscan --fdpass "'"$directory"'" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "'"$LOG_OUTPUT"'"
+            echo "" >>"'"$LOG_OUTPUT"'"
+            echo "----------------------------------------" >>"'"$LOG_OUTPUT"'"
+            echo "Scan completed at $(date)" >>"'"$LOG_OUTPUT"'"
+            # Stop daemon after scan to free memory
+            systemctl stop clamav-daemon 2>/dev/null || systemctl stop clamd@scan 2>/dev/null || true
+            echo "Daemon stopped to free memory." >>"'"$LOG_OUTPUT"'"
+        ' >/dev/null 2>&1 &
     else
         # clamscan standalone with thread limit
-        (
-            clamscan -r --max-threads="$threads" "$directory" 2>&1 | \
-            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
-            echo "" >>"$LOG_OUTPUT"
-            echo "----------------------------------------" >>"$LOG_OUTPUT"
-            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-        ) &
+        nohup bash -c '
+            clamscan -r --max-threads="'"$threads"'" "'"$directory"'" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "'"$LOG_OUTPUT"'"
+            echo "" >>"'"$LOG_OUTPUT"'"
+            echo "----------------------------------------" >>"'"$LOG_OUTPUT"'"
+            echo "Scan completed at $(date)" >>"'"$LOG_OUTPUT"'"
+        ' >/dev/null 2>&1 &
     fi
     local pid=$!
+    disown $pid
     
     echo -e "${GREEN}Scan started in the background (PID: $pid).${NC}"
     echo -e "${CYAN}Using $threads CPU thread(s) (of $(nproc 2>/dev/null || echo '?') available)${NC}"
     echo "Output logs: $LOG_OUTPUT"
     echo ""
+    echo -e "${GREEN}✓ Scan will continue even if you disconnect SSH${NC}"
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
     echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
+    if $use_daemon; then
+        echo -e "${DIM}Note: Daemon will auto-stop after scan to free memory${NC}"
+    fi
 }
 
 show_progress() {
