@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 1.9.1                             #
+#     Version     : 2.1.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="1.9.1"
+SCRIPT_VERSION="2.1.0"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -126,6 +126,9 @@ DATE_NOW=$(date +"%Y-%m-%d_%H-%M-%S")
 # RAM threshold for daemon mode (in MB)
 RAM_THRESHOLD_MB=4096
 
+# CPU thread limit (0 = auto, half of available cores)
+CPU_THREADS=0
+
 # ------------------------ Helper Functions ------------------------
 log() {
     local msg="$1"
@@ -163,6 +166,19 @@ get_log_files() {
     local scan_type=$1
     LOG_OUTPUT="$LOG_DIR/${scan_type}_scan_output_${DATE_NOW}.log"
     LOG_ERRORS="$LOG_DIR/${scan_type}_scan_errors_${DATE_NOW}.log"
+}
+
+# Get optimal thread count (half of available cores, minimum 1)
+get_thread_count() {
+    if [[ $CPU_THREADS -gt 0 ]]; then
+        echo $CPU_THREADS
+    else
+        local cores
+        cores=$(nproc 2>/dev/null || echo 2)
+        local threads=$((cores / 2))
+        [[ $threads -lt 1 ]] && threads=1
+        echo $threads
+    fi
 }
 
 # ------------------------ ClamAV Functions ------------------------
@@ -322,24 +338,31 @@ scan_system() {
         echo -e "${YELLOW}Using standalone mode (higher RAM usage)${NC}"
     fi
     
+    local threads
+    threads=$(get_thread_count)
+    
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
-    echo "Scan command: $scan_cmd" >>"$LOG_OUTPUT"
+    echo "Scan command: $scan_cmd (threads: $threads)" >>"$LOG_OUTPUT"
+    echo "Scanning: / (excluding /sys, /proc, /dev, /run)" >>"$LOG_OUTPUT"
+    echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
-    # Run scan in background with proper output handling
+    # Run scan in background - only log FOUND entries and summary
     if $use_daemon; then
-        # clamdscan with multiscan and fdpass (for permission issues)
+        # clamdscan with fdpass (for permission issues)
         # Note: clamdscan is recursive by default, no -r needed
         (
-            clamdscan --multiscan --fdpass / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamdscan --fdpass / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
         ) &
     else
-        # clamscan standalone
+        # clamscan standalone with thread limit
         (
-            clamscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamscan -r --max-threads="$threads" / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
@@ -348,9 +371,11 @@ scan_system() {
     local pid=$!
     
     echo -e "${GREEN}Scan started in background (PID: $pid).${NC}"
+    echo -e "${CYAN}Using $threads CPU thread(s) (of $(nproc 2>/dev/null || echo '?') available)${NC}"
     echo "Output logs: $LOG_OUTPUT"
     echo ""
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
+    echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
 }
 
 scan_directory() {
@@ -378,24 +403,31 @@ scan_directory() {
         echo -e "${YELLOW}Using standalone mode (higher RAM usage)${NC}"
     fi
     
+    local threads
+    threads=$(get_thread_count)
+    
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
-    echo "Scan command: $scan_cmd -r $directory" >>"$LOG_OUTPUT"
+    echo "Scan command: $scan_cmd (threads: $threads)" >>"$LOG_OUTPUT"
+    echo "Scanning: $directory" >>"$LOG_OUTPUT"
+    echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
-    # Run scan in background with proper output handling
+    # Run scan in background - only log FOUND entries and summary
     if $use_daemon; then
-        # clamdscan with multiscan and fdpass (for permission issues)
+        # clamdscan with fdpass (for permission issues)
         # Note: clamdscan is recursive by default, no -r needed
         (
-            clamdscan --multiscan --fdpass "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamdscan --fdpass "$directory" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
         ) &
     else
-        # clamscan standalone
+        # clamscan standalone with thread limit
         (
-            clamscan -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+            clamscan -r --max-threads="$threads" "$directory" 2>&1 | \
+            grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" | tee -a "$LOG_OUTPUT"
             echo "" >>"$LOG_OUTPUT"
             echo "----------------------------------------" >>"$LOG_OUTPUT"
             echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
@@ -404,9 +436,11 @@ scan_directory() {
     local pid=$!
     
     echo -e "${GREEN}Scan started in the background (PID: $pid).${NC}"
+    echo -e "${CYAN}Using $threads CPU thread(s) (of $(nproc 2>/dev/null || echo '?') available)${NC}"
     echo "Output logs: $LOG_OUTPUT"
     echo ""
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
+    echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
 }
 
 show_progress() {
