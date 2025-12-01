@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 1.8.0                             #
+#     Version     : 1.9.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="1.8.0"
+SCRIPT_VERSION="1.9.0"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -256,6 +256,7 @@ start_clamd() {
 }
 
 # Get the appropriate scan command based on RAM and daemon status
+# Returns: "clamdscan" or "clamscan"
 get_scan_command() {
     # If RAM < 4GB, always use clamscan (no daemon)
     if ! has_enough_ram; then
@@ -265,7 +266,7 @@ get_scan_command() {
     
     # If RAM >= 4GB and daemon is running, use clamdscan
     if check_clamd_status && command -v clamdscan &>/dev/null; then
-        echo "clamdscan --multiscan"
+        echo "clamdscan"
     else
         echo "clamscan"
     fi
@@ -311,25 +312,38 @@ scan_system() {
     start_clamd
     local scan_cmd
     scan_cmd=$(get_scan_command)
+    local use_daemon=false
+    [[ "$scan_cmd" == "clamdscan" ]] && use_daemon=true
     
-    echo -e "\n${BLUE}Starting system scan with ${scan_cmd%% *}...${NC}"
-    if [[ "$scan_cmd" == *"clamdscan"* ]]; then
+    echo -e "\n${BLUE}Starting system scan with ${scan_cmd}...${NC}"
+    if $use_daemon; then
         echo -e "${GREEN}Using daemon mode (low RAM usage)${NC}"
     else
         echo -e "${YELLOW}Using standalone mode (higher RAM usage)${NC}"
     fi
     
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
-    echo "Scan command: $scan_cmd -r /" >>"$LOG_OUTPUT"
+    echo "Scan command: $scan_cmd" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
     # Run scan in background with proper output handling
-    (
-        $scan_cmd -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
-        echo "" >>"$LOG_OUTPUT"
-        echo "----------------------------------------" >>"$LOG_OUTPUT"
-        echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-    ) &
+    if $use_daemon; then
+        # clamdscan with multiscan
+        (
+            clamdscan --multiscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
+            echo "" >>"$LOG_OUTPUT"
+            echo "----------------------------------------" >>"$LOG_OUTPUT"
+            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+        ) &
+    else
+        # clamscan standalone
+        (
+            clamscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
+            echo "" >>"$LOG_OUTPUT"
+            echo "----------------------------------------" >>"$LOG_OUTPUT"
+            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+        ) &
+    fi
     local pid=$!
     
     echo -e "${GREEN}Scan started in background (PID: $pid).${NC}"
@@ -353,9 +367,11 @@ scan_directory() {
     start_clamd
     local scan_cmd
     scan_cmd=$(get_scan_command)
+    local use_daemon=false
+    [[ "$scan_cmd" == "clamdscan" ]] && use_daemon=true
     
-    echo -e "\n${BLUE}Starting scan of directory: $directory with ${scan_cmd%% *}${NC}"
-    if [[ "$scan_cmd" == *"clamdscan"* ]]; then
+    echo -e "\n${BLUE}Starting scan of directory: $directory with ${scan_cmd}${NC}"
+    if $use_daemon; then
         echo -e "${GREEN}Using daemon mode (low RAM usage)${NC}"
     else
         echo -e "${YELLOW}Using standalone mode (higher RAM usage)${NC}"
@@ -366,12 +382,23 @@ scan_directory() {
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
     # Run scan in background with proper output handling
-    (
-        $scan_cmd -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
-        echo "" >>"$LOG_OUTPUT"
-        echo "----------------------------------------" >>"$LOG_OUTPUT"
-        echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
-    ) &
+    if $use_daemon; then
+        # clamdscan with multiscan
+        (
+            clamdscan --multiscan -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+            echo "" >>"$LOG_OUTPUT"
+            echo "----------------------------------------" >>"$LOG_OUTPUT"
+            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+        ) &
+    else
+        # clamscan standalone
+        (
+            clamscan -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+            echo "" >>"$LOG_OUTPUT"
+            echo "----------------------------------------" >>"$LOG_OUTPUT"
+            echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+        ) &
+    fi
     local pid=$!
     
     echo -e "${GREEN}Scan started in the background (PID: $pid).${NC}"
