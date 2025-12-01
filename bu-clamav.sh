@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 1.7.0                             #
+#     Version     : 1.8.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="1.7.0"
+SCRIPT_VERSION="1.8.0"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -265,7 +265,7 @@ get_scan_command() {
     
     # If RAM >= 4GB and daemon is running, use clamdscan
     if check_clamd_status && command -v clamdscan &>/dev/null; then
-        echo "clamdscan --multiscan --fdpass"
+        echo "clamdscan --multiscan"
     else
         echo "clamscan"
     fi
@@ -321,15 +321,24 @@ scan_system() {
     
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
     echo "Scan command: $scan_cmd -r /" >>"$LOG_OUTPUT"
-    nohup $scan_cmd -r / >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
+    echo "----------------------------------------" >>"$LOG_OUTPUT"
+    
+    # Run scan in background with proper output handling
+    (
+        $scan_cmd -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" 2>&1 | tee -a "$LOG_OUTPUT"
+        echo "" >>"$LOG_OUTPUT"
+        echo "----------------------------------------" >>"$LOG_OUTPUT"
+        echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+    ) &
     local pid=$!
+    
     echo -e "${GREEN}Scan started in background (PID: $pid).${NC}"
     echo "Output logs: $LOG_OUTPUT"
-    echo "Error logs: $LOG_ERRORS"
+    echo ""
+    echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
 }
 
 scan_directory() {
-    update_clamav_db
     read -rp "Enter the full path of the directory to scan: " directory
 
     if [[ ! -d "$directory" ]]; then
@@ -337,6 +346,7 @@ scan_directory() {
         return 1
     fi
 
+    update_clamav_db
     get_log_files "directory"
     
     # Try to start daemon for low RAM usage
@@ -353,11 +363,21 @@ scan_directory() {
     
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
     echo "Scan command: $scan_cmd -r $directory" >>"$LOG_OUTPUT"
-    nohup $scan_cmd -r "$directory" >>"$LOG_OUTPUT" 2>>"$LOG_ERRORS" &
+    echo "----------------------------------------" >>"$LOG_OUTPUT"
+    
+    # Run scan in background with proper output handling
+    (
+        $scan_cmd -r "$directory" 2>&1 | tee -a "$LOG_OUTPUT"
+        echo "" >>"$LOG_OUTPUT"
+        echo "----------------------------------------" >>"$LOG_OUTPUT"
+        echo "Scan completed at $(date)" >>"$LOG_OUTPUT"
+    ) &
     local pid=$!
+    
     echo -e "${GREEN}Scan started in the background (PID: $pid).${NC}"
     echo "Output logs: $LOG_OUTPUT"
-    echo "Error logs: $LOG_ERRORS"
+    echo ""
+    echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
 }
 
 show_progress() {
