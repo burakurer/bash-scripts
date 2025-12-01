@@ -5,14 +5,14 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-toolkit.sh                     #
 #     Description : Server Management Toolkit         #
-#     Version     : 4.1.0                             #
+#     Version     : 4.2.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
 #                                                     #
 #######################################################
 
-set -euo pipefail
+set -uo pipefail
 IFS=$'\n\t'
 
 # ------------------------ Colors ------------------------
@@ -29,7 +29,7 @@ NC='\033[0m'
 # ------------------------ Variables ------------------------
 OS=""
 VERSION=""
-SCRIPT_VERSION="4.1.0"
+SCRIPT_VERSION="4.2.0"
 SCRIPT_NAME="bu-toolkit.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 

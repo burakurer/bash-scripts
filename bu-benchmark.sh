@@ -5,7 +5,7 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-benchmark.sh                   #
 #     Description : Disk I/O Performance Benchmark    #
-#     Version     : 2.1.0                             #
+#     Version     : 2.3.0                             #
 #     Last Update : 01/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
@@ -16,7 +16,7 @@ set -uo pipefail
 export LC_ALL=C
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.3.0"
 SCRIPT_NAME="bu-benchmark.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
@@ -261,22 +261,22 @@ rate_speed() {
 
     case "$test_type" in
         "sequential_write"|"typical_write"|"sequential_read")
-            if   awk "BEGIN{exit !($mbps < 100)}";   then rating="Poor"
-            elif awk "BEGIN{exit !($mbps < 300)}";   then rating="Fair"
-            elif awk "BEGIN{exit !($mbps < 600)}";   then rating="Good"
-            elif awk "BEGIN{exit !($mbps < 1000)}";  then rating="Very Good"
+            if   awk -v m="$mbps" 'BEGIN{exit !(m < 100)}';   then rating="Poor"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 300)}';   then rating="Fair"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 600)}';   then rating="Good"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 1000)}';  then rating="Very Good"
             else rating="Excellent"; fi
             ;;
         "small_sync"|"random_io")
-            if   awk "BEGIN{exit !($mbps < 0.5)}";   then rating="Poor"
-            elif awk "BEGIN{exit !($mbps < 2)}";     then rating="Fair"
-            elif awk "BEGIN{exit !($mbps < 10)}";    then rating="Good"
+            if   awk -v m="$mbps" 'BEGIN{exit !(m < 0.5)}';   then rating="Poor"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 2)}';     then rating="Fair"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 10)}';    then rating="Good"
             else rating="Very Good"; fi
             ;;
         "mixed_write")
-            if   awk "BEGIN{exit !($mbps < 50)}";    then rating="Poor"
-            elif awk "BEGIN{exit !($mbps < 150)}";   then rating="Fair"
-            elif awk "BEGIN{exit !($mbps < 400)}";   then rating="Good"
+            if   awk -v m="$mbps" 'BEGIN{exit !(m < 50)}';    then rating="Poor"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 150)}';   then rating="Fair"
+            elif awk -v m="$mbps" 'BEGIN{exit !(m < 400)}';   then rating="Good"
             else rating="Very Good"; fi
             ;;
     esac
@@ -497,9 +497,11 @@ run_benchmarks() {
 
 # Print results summary
 print_summary() {
-    echo -e "\n${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo -e "${BOLD}                        BENCHMARK RESULTS                        ${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}\n"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
     
     # Calculate ratings
     local R_SEQ_WRITE R_SMALL_SYNC R_TYPICAL R_MIXED R_SEQ_READ R_RANDOM
@@ -510,15 +512,29 @@ print_summary() {
     R_SEQ_READ=$(rate_speed "sequential_read" "$MBPS_SEQ_READ")
     R_RANDOM=$(rate_speed "random_io" "$MBPS_RANDOM")
     
-    # Print table
-    printf "${BOLD}%-6s${NC} │ %-40s │ %12s │ %-12s\n" "Test" "Description" "Speed" "Rating"
-    printf "───────┼──────────────────────────────────────────┼──────────────┼─────────────\n"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "1" "Sequential Write (throughput)" "$MBPS_SEQ_WRITE" "$(colorize_rating "$R_SEQ_WRITE")"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "2" "Small Sync Write (latency)" "$MBPS_SMALL_SYNC" "$(colorize_rating "$R_SMALL_SYNC")"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "3" "Typical Write (fdatasync)" "$MBPS_TYPICAL" "$(colorize_rating "$R_TYPICAL")"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "4" "Mixed/Cached Write" "$MBPS_MIXED" "$(colorize_rating "$R_MIXED")"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "5" "Sequential Read" "$MBPS_SEQ_READ" "$(colorize_rating "$R_SEQ_READ")"
-    printf "%-6s │ %-40s │ %9.2f MB/s │ %-12b\n" "6" "Random I/O" "$MBPS_RANDOM" "$(colorize_rating "$R_RANDOM")"
+    # Print table header
+    echo -e "${BOLD}Test   │ Description                              │        Speed │ Rating${NC}"
+    echo "───────┼──────────────────────────────────────────┼──────────────┼─────────────"
+    
+    # Format and print each row using echo
+    local speed_fmt
+    speed_fmt=$(awk -v s="$MBPS_SEQ_WRITE" 'BEGIN{printf "%9.2f", s}')
+    echo -e "1      │ Sequential Write (throughput)            │ ${speed_fmt} MB/s │ $(colorize_rating "$R_SEQ_WRITE")"
+    
+    speed_fmt=$(awk -v s="$MBPS_SMALL_SYNC" 'BEGIN{printf "%9.2f", s}')
+    echo -e "2      │ Small Sync Write (latency)               │ ${speed_fmt} MB/s │ $(colorize_rating "$R_SMALL_SYNC")"
+    
+    speed_fmt=$(awk -v s="$MBPS_TYPICAL" 'BEGIN{printf "%9.2f", s}')
+    echo -e "3      │ Typical Write (fdatasync)                │ ${speed_fmt} MB/s │ $(colorize_rating "$R_TYPICAL")"
+    
+    speed_fmt=$(awk -v s="$MBPS_MIXED" 'BEGIN{printf "%9.2f", s}')
+    echo -e "4      │ Mixed/Cached Write                       │ ${speed_fmt} MB/s │ $(colorize_rating "$R_MIXED")"
+    
+    speed_fmt=$(awk -v s="$MBPS_SEQ_READ" 'BEGIN{printf "%9.2f", s}')
+    echo -e "5      │ Sequential Read                          │ ${speed_fmt} MB/s │ $(colorize_rating "$R_SEQ_READ")"
+    
+    speed_fmt=$(awk -v s="$MBPS_RANDOM" 'BEGIN{printf "%9.2f", s}')
+    echo -e "6      │ Random I/O                               │ ${speed_fmt} MB/s │ $(colorize_rating "$R_RANDOM")"
     
     # Calculate overall score
     local S_SEQ_WRITE S_TYPICAL S_SEQ_READ S_MIXED
@@ -533,10 +549,10 @@ print_summary() {
     
     # Determine overall rating
     local OVERALL_RATING OVERALL_COLOR
-    if   awk "BEGIN{exit !($OVERALL_SCORE < 25)}";  then OVERALL_RATING="Poor"; OVERALL_COLOR="$RED"
-    elif awk "BEGIN{exit !($OVERALL_SCORE < 50)}";  then OVERALL_RATING="Fair"; OVERALL_COLOR="$YELLOW"
-    elif awk "BEGIN{exit !($OVERALL_SCORE < 70)}";  then OVERALL_RATING="Good"; OVERALL_COLOR="$GREEN"
-    elif awk "BEGIN{exit !($OVERALL_SCORE < 85)}";  then OVERALL_RATING="Very Good"; OVERALL_COLOR="$CYAN"
+    if   awk -v s="$OVERALL_SCORE" 'BEGIN{exit !(s < 25)}';  then OVERALL_RATING="Poor"; OVERALL_COLOR="$RED"
+    elif awk -v s="$OVERALL_SCORE" 'BEGIN{exit !(s < 50)}';  then OVERALL_RATING="Fair"; OVERALL_COLOR="$YELLOW"
+    elif awk -v s="$OVERALL_SCORE" 'BEGIN{exit !(s < 70)}';  then OVERALL_RATING="Good"; OVERALL_COLOR="$GREEN"
+    elif awk -v s="$OVERALL_SCORE" 'BEGIN{exit !(s < 85)}';  then OVERALL_RATING="Very Good"; OVERALL_COLOR="$CYAN"
     else OVERALL_RATING="Excellent"; OVERALL_COLOR="$MAGENTA"
     fi
     
