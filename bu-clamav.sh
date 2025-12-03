@@ -5,8 +5,8 @@
 #     Author      : burakurer.dev                     #
 #     Script      : bu-clamav.sh                      #
 #     Description : ClamAV Antivirus Management Tool  #
-#     Version     : 2.4.0                             #
-#     Last Update : 01/12/2025                        #
+#     Version     : 2.4.1                             #
+#     Last Update : 03/12/2025                        #
 #     Website     : https://burakurer.dev             #
 #     Github      : https://github.com/burakurer      #
 #                                                     #
@@ -324,11 +324,11 @@ update_clamav_db() {
 print_scan_summary() {
     local output_file=$1
     echo -e "\n${YELLOW}Scan Summary:${NC}" | tee -a "$output_file"
-    local total_files
+    local total_dirs
     local infected
-    total_files=$(grep "Scanned directories:" "$output_file" | tail -1 | awk '{print $3}')
+    total_dirs=$(grep "Scanned directories:" "$output_file" | tail -1 | awk '{print $3}')
     infected=$(grep "Infected files:" "$output_file" | tail -1 | awk '{print $3}')
-    echo "Total scanned directories: $total_files" | tee -a "$output_file"
+    echo "Total scanned directories: $total_dirs" | tee -a "$output_file"
     echo "Infected files found: $infected" | tee -a "$output_file"
 }
 
@@ -356,7 +356,6 @@ scan_system() {
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
     echo "Scan command: $scan_cmd (threads: $threads)" >>"$LOG_OUTPUT"
     echo "Scanning: / (excluding /sys, /proc, /dev, /run)" >>"$LOG_OUTPUT"
-    echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
     # Create temporary script for background execution (survives SSH disconnect)
@@ -367,8 +366,12 @@ scan_system() {
         cat > "$tmp_script" << 'SCAN_EOF'
 #!/bin/bash
 LOG_FILE="$1"
-clamdscan --fdpass / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
-    grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" >> "$LOG_FILE"
+clamdscan --fdpass / \
+    --exclude-dir="^/sys" \
+    --exclude-dir="^/proc" \
+    --exclude-dir="^/dev" \
+    --exclude-dir="^/run" \
+    >> "$LOG_FILE" 2>&1
 echo "" >> "$LOG_FILE"
 echo "----------------------------------------" >> "$LOG_FILE"
 echo "Scan completed at $(date)" >> "$LOG_FILE"
@@ -382,8 +385,12 @@ SCAN_EOF
         cat > "$tmp_script" << 'SCAN_EOF'
 #!/bin/bash
 LOG_FILE="$1"
-clamscan -r / --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \
-    grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" >> "$LOG_FILE"
+clamscan -r / \
+    --exclude-dir="^/sys" \
+    --exclude-dir="^/proc" \
+    --exclude-dir="^/dev" \
+    --exclude-dir="^/run" \
+    >> "$LOG_FILE" 2>&1
 echo "" >> "$LOG_FILE"
 echo "----------------------------------------" >> "$LOG_FILE"
 echo "Scan completed at $(date)" >> "$LOG_FILE"
@@ -402,7 +409,7 @@ SCAN_EOF
     echo ""
     echo -e "${GREEN}✓ Scan will continue even if you disconnect SSH${NC}"
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
-    echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
+    echo -e "${DIM}Tip: Use option 4 to list only infected files (FOUND)${NC}"
     if $use_daemon; then
         echo -e "${DIM}Note: Daemon will auto-stop after scan to free memory${NC}"
     fi
@@ -439,7 +446,6 @@ scan_directory() {
     echo "Scan started at $(date)" >"$LOG_OUTPUT"
     echo "Scan command: $scan_cmd (threads: $threads)" >>"$LOG_OUTPUT"
     echo "Scanning: $directory" >>"$LOG_OUTPUT"
-    echo "Note: Only infected files will be logged below" >>"$LOG_OUTPUT"
     echo "----------------------------------------" >>"$LOG_OUTPUT"
     
     # Create temporary script for background execution (survives SSH disconnect)
@@ -447,32 +453,35 @@ scan_directory() {
     
     if $use_daemon; then
         # clamdscan with fdpass (for permission issues)
-        cat > "$tmp_script" << SCAN_EOF
+        cat > "$tmp_script" << 'SCAN_EOF'
 #!/bin/bash
-LOG_FILE="\$1"
-SCAN_DIR="\$2"
-clamdscan --fdpass "\$SCAN_DIR" 2>&1 | \\
-    grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" >> "\$LOG_FILE"
-echo "" >> "\$LOG_FILE"
-echo "----------------------------------------" >> "\$LOG_FILE"
-echo "Scan completed at \$(date)" >> "\$LOG_FILE"
+LOG_FILE="$1"
+SCAN_DIR="$2"
+clamdscan --fdpass "$SCAN_DIR" >> "$LOG_FILE" 2>&1
+echo "" >> "$LOG_FILE"
+echo "----------------------------------------" >> "$LOG_FILE"
+echo "Scan completed at $(date)" >> "$LOG_FILE"
 # Stop daemon after scan to free memory
 systemctl stop clamav-daemon 2>/dev/null || systemctl stop clamd@scan 2>/dev/null || true
-echo "Daemon stopped to free memory." >> "\$LOG_FILE"
-rm -f "\$0"
+echo "Daemon stopped to free memory." >> "$LOG_FILE"
+rm -f "$0"
 SCAN_EOF
     else
         # clamscan standalone
-        cat > "$tmp_script" << SCAN_EOF
+        cat > "$tmp_script" << 'SCAN_EOF'
 #!/bin/bash
-LOG_FILE="\$1"
-SCAN_DIR="\$2"
-clamscan -r "\$SCAN_DIR" --exclude-dir="^/sys" --exclude-dir="^/proc" --exclude-dir="^/dev" --exclude-dir="^/run" 2>&1 | \\
-    grep -E "(FOUND|Infected files|Scanned|Time:|Known viruses)" >> "\$LOG_FILE"
-echo "" >> "\$LOG_FILE"
-echo "----------------------------------------" >> "\$LOG_FILE"
-echo "Scan completed at \$(date)" >> "\$LOG_FILE"
-rm -f "\$0"
+LOG_FILE="$1"
+SCAN_DIR="$2"
+clamscan -r "$SCAN_DIR" \
+    --exclude-dir="^/sys" \
+    --exclude-dir="^/proc" \
+    --exclude-dir="^/dev" \
+    --exclude-dir="^/run" \
+    >> "$LOG_FILE" 2>&1
+echo "" >> "$LOG_FILE"
+echo "----------------------------------------" >> "$LOG_FILE"
+echo "Scan completed at $(date)" >> "$LOG_FILE"
+rm -f "$0"
 SCAN_EOF
     fi
     
@@ -487,7 +496,7 @@ SCAN_EOF
     echo ""
     echo -e "${GREEN}✓ Scan will continue even if you disconnect SSH${NC}"
     echo -e "${CYAN}Tip: Use option 3 to monitor progress in real-time${NC}"
-    echo -e "${DIM}Note: Only infected files (FOUND) will be logged${NC}"
+    echo -e "${DIM}Tip: Use option 4 to list only infected files (FOUND)${NC}"
     if $use_daemon; then
         echo -e "${DIM}Note: Daemon will auto-stop after scan to free memory${NC}"
     fi
