@@ -25,7 +25,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 # ------------------------ Script Info ------------------------
-SCRIPT_VERSION="2.4.0"
+SCRIPT_VERSION="2.4.1"
 SCRIPT_NAME="bu-clamav.sh"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/burakurer/bash-scripts/master"
 
